@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Summary Result</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet"
+        xintegrity="sha384-LN+7fdVzj6u52u30Kp6M/trliBMCMKTyK833zpbD+pXdCLuTusPj697FH4R/5mcr" crossorigin="anonymous">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+
+        .custom-navbar {
+            background-color: #11d9eb;
+        }
+
+        .custom-name-navbar-font {
+            font-size: xx-large;
+            font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+            padding-left: 10px;
+            padding-top: 8px;
+            padding-bottom: 8px;
+            padding-right: 10px;
+            margin-right: auto;
+        }
+
+        .custom-features-navbar-font {
+            font-size: x-large;
+            font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+            padding-left: 5px;
+            padding-top: 8px;
+            padding-bottom: 8px;
+            padding-right: 5px;
+        }
+
+        .main-content-card {
+            background-color: #ffffff;
+            border-radius: .375rem;
+            box-shadow: 0 .125rem .25rem rgba(0, 0, 0, .075);
+            padding: 1.5rem;
+        }
+
+        .customh1 {
+            font-weight: bold;
+            font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+            margin-bottom: 1rem;
+        }
+
+        .summary-section h4 {
+            font-weight: bold;
+            color: #0d6efd; /* Bootstrap primary color */
+            margin-top: 1.5rem;
+            margin-bottom: 0.8rem;
+        }
+
+        .summary-section p, .summary-section ul {
+            font-size: 1.1rem;
+            line-height: 1.6;
+            margin-bottom: 1rem;
+        }
+
+        .summary-section ul {
+            list-style-type: disc;
+            padding-left: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container-fluid custom-navbar">
+        <nav class="navbar navbar-expand-lg navbar-dark ">
+            <div class="container-fluid">
+                <a class="navbar-brand custom-name-navbar-font" href="/">Convertask</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+                    data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent"
+                    aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                    <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                        <li class="nav-item">
+                            <a class="nav-link active custom-features-navbar-font" aria-current="page" href="/">Home</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+    </div>
+
+    <div class="container-fluid mt-4">
+        <div class="row justify-content-center">
+            <div class="col-md-9">
+                <div class="card mt-4">
+                    <div class="main-content-card">
+                        <h3 class="customh1 text-center mb-4">Structured Summary for {{ original_filename }}</h3>
+
+                        {% if summary_data.error %}
+                            <div class="alert alert-danger" role="alert">
+                                Error: {{ summary_data.error }}
+                            </div>
+                        {% else %}
+                            <div class="summary-section">
+                                <p><strong>Interaction Type:</strong> <span class="badge bg-info">{{ summary_data.interaction_type | default('N/A') }}</span></p>
+                            </div>
+
+                            <div class="summary-section">
+                                <h4>Summary</h4>
+                                <p>{{ summary_data.summary | default('No summary available.') }}</p>
+                            </div>
+
+                            <div class="summary-section">
+                                <h4>Speaker Minutes / Key Points</h4>
+                                <p>{{ summary_data.speaker_minutes | default('No speaker minutes or key points available.') }}</p>
+                            </div>
+
+                            <div class="summary-section">
+                                <h4>Actions</h4>
+                                {% if summary_data.actions and summary_data.actions|length > 0 %}
+                                    <ul>
+                                        {% for action in summary_data.actions %}
+                                            <li>{{ action }}</li>
+                                        {% endfor %}
+                                    </ul>
+                                {% else %}
+                                    <p>No actions identified.</p>
+                                {% endif %}
+                            </div>
+
+                            <div class="summary-section">
+                                <h4>Decisions</h4>
+                                {% if summary_data.decisions and summary_data.decisions|length > 0 %}
+                                    <ul>
+                                        {% for decision in summary_data.decisions %}
+                                            <li>{{ decision }}</li>
+                                        {% endfor %}
+                                    </ul>
+                                {% else %}
+                                    <p>No decisions identified.</p>
+                                {% endif %}
+                            </div>
+
+                            <div class="summary-section">
+                                <h4>Tasks</h4>
+                                {% if summary_data.tasks and summary_data.tasks|length > 0 %}
+                                    <ul>
+                                        {% for task in summary_data.tasks %}
+                                            <li>{{ task }}</li>
+                                        {% endfor %}
+                                    </ul>
+                                {% else %}
+                                    <p>No tasks identified.</p>
+                                {% endif %}
+                            </div>
+
+                            <div class="summary-section">
+                                <h4>Follow-ups</h4>
+                                {% if summary_data.followups and summary_data.followups|length > 0 %}
+                                    <ul>
+                                        {% for followup in summary_data.followups %}
+                                            <li>{{ followup }}</li>
+                                        {% endfor %}
+                                    </ul>
+                                {% else %}
+                                    <p>No follow-up items identified.</p>
+                                {% endif %}
+                            </div>
+
+                            <div class="summary-section">
+                                <h4>Deadlines</h4>
+                                {% if summary_data.deadlines and summary_data.deadlines|length > 0 %}
+                                    <ul>
+                                        {% for deadline in summary_data.deadlines %}
+                                            <li>{{ deadline }}</li>
+                                        {% endfor %}
+                                    </ul>
+                                {% else %}
+                                    <p>No deadlines identified.</p>
+                                {% endif %}
+                            </div>
+
+                            <div class="summary-section">
+                                <h4>Prompt-Based Response</h4>
+                                {% if summary_data.prompt_based and summary_data.prompt_based != 'null' %}
+                                    <p>{{ summary_data.prompt_based }}</p>
+                                {% else %}
+                                    <p>No specific prompt-based response generated.</p>
+                                {% endif %}
+                            </div>
+
+                        {% endif %}
+
+                        <div class="text-center mt-5">
+                            <a href="/" class="btn btn-primary">Go Back to Upload</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"
+        xintegrity="sha384-ndDqU0Gzau9qJ1lfW4pNLlhNTkCfHzAVBReH9diLvGRem5+R9g2FzA8ZGN954O5Q"
+        crossorigin="anonymous"></script>
+</body>
+
+</html>

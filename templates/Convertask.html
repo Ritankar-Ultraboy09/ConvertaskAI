@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Convertask</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-4Q6Gf2aSP4eDXB8Miphtr37CMZZQ5oXLH2yaXMJ2w8e2ZtHTl7GptT4jmndRuHDT" crossorigin="anonymous">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+
+        .custom-navbar {
+            background-color: #11d9eb;
+        }
+
+        .custom-name-navbar-font {
+            font-size: xx-large;
+            font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+            padding-left: 10px;
+            padding-top: 8px;
+            padding-bottom: 8px;
+            padding-right: 10px;
+            margin-right: auto;
+        }
+
+        .custom-features-navbar-font {
+            font-size: x-large;
+            font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+            padding-left: 5px;
+            padding-top: 8px;
+            padding-bottom: 8px;
+            padding-right: 5px;
+
+        }
+
+        .customh1 {
+            font-weight: bold;
+            font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+        }
+
+        .sidebar-card {
+            background-color: #ffffff;
+            border-radius: .375rem;
+            box-shadow: 0 .125rem .25rem rgba(0, 0, 0, .075);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .main-content-card {
+            background-color: #ffffff;
+            border-radius: .375rem;
+            box-shadow: 0 .125rem .25rem rgba(0, 0, 0, .075);
+            padding: 1.5rem;
+        }
+
+        .progress-bar-container {
+            background-color: #e9ecef;
+            border-radius: .25rem;
+            height: 10px;
+            overflow: hidden;
+            margin-top: 10px;
+            margin-bottom: 20px;
+        }
+
+        .progress-bar-custom {
+            height: 100%;
+            width: 33%;
+            background-color: #007bff;
+            border-radius: .25rem;
+        }
+
+        .title-modal {
+            font-size: large;
+            font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+
+
+        }
+
+        .btn-inside-modal {
+            background-color: #11d9eb;
+        }
+
+        .anywhere-padding {
+            padding: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container-fluid custom-navbar">
+        <nav class="navbar navbar-expand-lg navbar-dark ">
+            <div class="container-fluid">
+                <a class="navbar-brand custom-name-navbar-font" href="/">Convertask</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+                    data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent"
+                    aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                    <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                        <li class="nav-item">
+                            <a class="nav-link active custom-features-navbar-font" aria-current="page" href="/">Home</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+    </div>
+
+    <div class="container-fluid mt-4">
+        <div class="row">
+            <div class="col-md-3">
+                <div class="sidebar-card">
+
+                    <!-- <h6>Shortcuts</h6>
+                    <ul class="list-unstyled">
+                        <li class="mb-2"><a href="#" class="text-decoration-none text-dark"><i class="bi bi-folder-fill me-2"></i> Recent Files</a></li>
+                    </ul>
+                    <h6>Folders</h6>
+                    <ul class="list-unstyled">
+                        <li><a href="#" class="text-decoration-none text-dark"><i class="bi bi-plus-circle me-2"></i> New Folder</a></li>
+                    </ul> -->
+                </div>
+            </div>
+
+            <div class="col-md-9">
+                <div class="main-content-card">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+
+
+                    </div>
+                    <div class="text-center py-5">
+                        <h3 class="mb-3 customh1">Welcome to Convertask!</h3>
+                        <button class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#uploadModal"><i
+                                class="bi bi-cloud-upload me-2"></i> Upload your File</button>
+
+                    </div>
+                    <div class="modal fade" id="uploadModal" tabindex="-1" aria-labelledby="uploadModalLabel"
+                        aria-hidden="true">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title title-modal" id="uploadModalLabel">Audio Files</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                        aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body text-center">
+                                    <div class="mb-3">
+                                        <button class="btn btn-primary btn-inside-modal"
+                                            onclick="document.getElementById('fileinput').click()">Browse Files</button>
+                                        <input type="file" id="fileinput" style="display:none;"
+                                            accept="audio/*, .m4a, .mp3, .wav, .ogg, .flac, .aac, .mp3 ">
+                                        <div class="progress mt-3" id="progressContainer"
+                                            style="height: 20px; display: none;">
+                                            <div id="fileLoadBar" class="progress-bar" role="progressbar"
+                                                style="width: 0%;" aria-label="Info striped example" aria-valuenow="0"
+                                                aria-valuemin="0" aria-valuemax="100">0%</div>
+                                        </div>
+                                        <div id="audioPreview" class="mt-3"></div>
+                                    </div>
+                                </div>
+                                <div class="mb-3 anywhere-padding">
+                                    <label for="language" class="form-label">Audio Language</label>
+                                    <select id="language" class="form-select">
+                                        <option value="en">English 🇺🇸</option>
+
+                                    </select>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-primary btn-inside-modal"
+                                        data-bs-dismiss="modal">Close</button>
+                                    <button type="button" id="createTranscription"
+                                        class="btn btn-primary btn-inside-modal">Create</button>
+                                </div>
+
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    </div>
+
+
+
+
+
+    <script>
+        let uploadedFilename = null;
+
+        document.getElementById('fileinput').addEventListener('change', function (event) {
+            const file = event.target.files[0];
+            const preview = document.getElementById('audioPreview');
+            const progressBar = document.getElementById('fileLoadBar');
+            const progressContainer = document.getElementById('progressContainer');
+            preview.innerHTML = '';
+            progressBar.style.width = '0%';
+            progressBar.setAttribute('aria-valuenow', 0);
+            progressBar.textContent = '0%';
+
+            if (file) {
+                progressContainer.style.display = 'block';
+
+                const reader = new FileReader();
+
+                reader.onprogress = function (e) {
+                    if (e.lengthComputable) {
+                        const percentLoaded = Math.round((e.loaded / e.total) * 100);
+                        progressBar.style.width = percentLoaded + '%';
+                        progressBar.setAttribute('aria-valuenow', percentLoaded);
+                        progressBar.textContent = percentLoaded + '%';
+                    }
+                };
+
+                reader.onloadstart = function () {
+                    progressBar.style.width = '0%';
+                    progressBar.setAttribute('aria-valuenow', 0);
+                    progressBar.textContent = '0%';
+                };
+
+                reader.onloadend = function () {
+                    progressBar.style.width = '100%';
+                    progressBar.setAttribute('aria-valuenow', 100);
+                    progressBar.textContent = '100%';
+
+                    if (file.type.startsWith('audio/')) {
+                        const audio = document.createElement('audio');
+                        audio.controls = true;
+                        audio.src = reader.result;
+                        preview.appendChild(audio);
+                    }
+
+
+                    uploadFileAJAX(file);
+                };
+
+                reader.readAsDataURL(file);
+            } else {
+                progressContainer.style.display = 'none';
+            }
+        });
+
+
+        function uploadFileAJAX(file) {
+            const formData = new FormData();
+            formData.append('file', file);
+
+            fetch('/upload', {
+                method: 'POST',
+                body: formData
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.filename) {
+                        uploadedFilename = data.filename;
+                    }
+                })
+                .catch(error => {
+                    // Not any as such as of now, won't even update, 
+                });
+        }
+
+        document.getElementById('createTranscription').addEventListener('click', function () {
+            if (!uploadedFilename) {
+                alert('Please upload a file first.');
+                return;
+            }
+            fetch('/transcribe', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ filename: uploadedFilename })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.redirect_url) {
+                        window.location.href = data.redirect_url;
+
+                    }
+                    else if (data.error) {
+                        alert('Transcription failed: ' + data.error);
+                    }
+                    else {
+                        alert('Transcription failed: Fuck off ');
+                    }
+                })
+                .catch(error => {
+                    console.error('Transcription error:', error);
+                    alert('An error occurred during transcription: ' + error);
+                });
+        });
+
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-j1CDi7MgGQ12Z7Qab0qlWQ/Qqz24Gc6BM0thvEMVjHnfYGF0rmFCozFSxQBxwHKO"
+        crossorigin="anonymous"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+</body>
+
+</html>

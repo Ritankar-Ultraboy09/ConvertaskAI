@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Transcription Result</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-LN+7fdVzj6u52u30Kp6M/trliBMCMKTyK833zpbD+pXdCLuTusPj697FH4R/5mcr" crossorigin="anonymous">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+
+        .custom-navbar {
+            background-color: #11d9eb;
+        }
+
+        .sidebar-card {
+            background-color: #ffffff;
+            border-radius: .375rem;
+            box-shadow: 0 .125rem .25rem rgba(0, 0, 0, .075);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .custom-name-navbar-font {
+            font-size: xx-large;
+            font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+            padding-left: 10px;
+            padding-top: 8px;
+            padding-bottom: 8px;
+            padding-right: 10px;
+            margin-right: auto;
+        }
+
+        .custom-features-navbar-font {
+            font-size: x-large;
+            font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+            padding-left: 5px;
+            padding-top: 8px;
+            padding-bottom: 8px;
+            padding-right: 5px;
+
+        }
+
+        pre {
+            font-family: 'Times New Roman', Times, serif;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            padding: 5px;
+            border-radius: 1px;
+            line-height: 1.8;
+            font-size: 1.2rem;
+        }
+
+        .customh1 {
+            font-weight: bold;
+            font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+        }
+
+        .main-content-card {
+            background-color: #ffffff;
+            border-radius: .375rem;
+            box-shadow: 0 .125rem .25rem rgba(0, 0, 0, .075);
+            padding: 1.5rem;
+
+        }
+
+        .btn-custom {
+            background-color: #11d9eb;
+            font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+
+
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container-fluid custom-navbar">
+        <nav class="navbar navbar-expand-lg navbar-dark ">
+            <div class="container-fluid">
+                <a class="navbar-brand custom-name-navbar-font" href="/">Convertask</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+                    data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent"
+                    aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                    <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                        <li class="nav-item">
+                            <a class="nav-link active custom-features-navbar-font" aria-current="page" href="/">Home</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+    </div>
+    <div class="container-fluid mt-4">
+        <div class="row">
+            <div class="col-md-3">
+                <div class="sidebar-card">
+
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="card mt-4">
+                    <div class=" main-content-card">
+                        <h3 class="mb-3 customh1 text-center">Transcription</h3>
+                        <pre id="transcriptContent">{{ transcript }}</pre>
+                        <div class="text-center mt-4" id="audioPlayerContainer"></div>
+                        <div class="text-center mt-4">
+                            <a href="/" class="btn btn-primary btn-custom">Go Back to Upload</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="sidebar-card">
+                    <h3 class="mb-3 customh1">Save transcript as?</h3>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" role="switch" id="switchCheckDocx" unchecked>
+                        <label class="form-check-label" for="switchCheckDocx">Save as .doc</label>
+                    </div>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" role="switch" id="switchCheckPdf" unchecked>
+                        <label class="form-check-label" for="switchCheckPdf">Save as .pdf</label>
+                    </div>
+                    <div class="text-center mt-4">
+                        <div class="btn btn-primary btn-custom" id="SavetranscriptButton">Save Transcript</div>
+                    </div>
+                </div>
+                <div class="sidebar-card">
+                    <h3 class="mb-3 customh1">Want to Summarise?</h3>
+                    <div class="text-center mt-4">
+
+                        <div class="btn btn-primary btn-custom" id="SummariseButton">Just Press</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <script>
+            const originalFilename = "{{ original_filename }}";
+
+            document.getElementById('SavetranscriptButton').addEventListener('click', function () {
+                const transcriptText = document.getElementById('transcriptContent').textContent;
+                const saveAsDocx = document.getElementById('switchCheckDocx').checked;
+                const saveAsPdf = document.getElementById('switchCheckPdf').checked;
+
+                let format = '';
+                if (saveAsDocx && saveAsPdf) {
+                    alert('Please select only one format (DOCX or PDF) to save.');
+                    return;
+                } else if (saveAsDocx) {
+                    format = 'docx';
+                } else if (saveAsPdf) {
+                    format = 'pdf';
+                } else {
+                    alert('Please select a format (DOCX or PDF) to save.');
+                    return;
+                }
+
+                fetch('/download_transcript', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        transcript: transcriptText,
+                        format: format
+                    })
+                })
+                    .then(response => {
+                        if (response.ok) {
+                            return response.blob();
+                        }
+                        throw new Error('Network response was not ok.');
+                    })
+                    .then(blob => {
+
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.style.display = 'none';
+                        a.href = url;
+                        a.download = `transcript.${format}`;
+                        document.body.appendChild(a);
+                        a.click();
+                        window.URL.revokeObjectURL(url);
+                        // alert(`Transcript downloaded as .${format}!`);
+                    })
+                    .catch(error => {
+                        console.error('Download error:', error);
+                        // alert('Failed to download transcript. Please try again.');
+                    });
+            });
+
+            document.getElementById('SummariseButton').addEventListener('click', function () {
+                const transcriptText = document.getElementById('transcriptContent').textContent;
+
+                fetch('/summarise_transcript', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        transcript: transcriptText
+                    })
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            alert('Summary generated successfully!');
+                            // You can display the summary in a modal or a new section
+                            console.log(data.summary);
+                        } else {
+                            alert('Failed to generate summary. Please try again.');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('An error occurred while generating the summary.');
+                    });
+
+            });
+            document.addEventListener('DOMContentLoaded', function () {
+                const audioPlayerContainer = document.getElementById('audioPlayerContainer');
+                if (originalFilename) {
+                    const audio = document.createElement('audio');
+                    audio.controls = true;
+                    audio.src = `/uploads/${originalFilename}`;
+                    audioPlayerContainer.appendChild(audio);
+                }
+            });
+
+            document.getElementById('SummariseButton').addEventListener('click', function () {
+                const transcriptText = document.getElementById('transcriptContent').textContent;
+
+                fetch('/summarise_transcript', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        transcript: transcriptText,
+                        original_filename: originalFilename
+                    })
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success && data.redirect_url) {
+                            window.location.href = data.redirect_url;
+                        } else {
+                            alert('Failed to generate summary. Please try again. Error: ' + data.error);
+                            console.error('Summarization error:', data.error);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('An error occurred while generating the summary.');
+                    });
+
+
+            });
+        </script>
+
+
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-ndDqU0Gzau9qJ1lfW4pNLlhNTkCfHzAVBReH9diLvGRem5+R9g2FzA8ZGN954O5Q"
+            crossorigin="anonymous"></script>
+</body>
+
+</html>

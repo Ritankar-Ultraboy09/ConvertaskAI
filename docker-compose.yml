@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+
+  web:
+    build: .
+    ports:
+      - "5000:5000" # <--- CHANGE THIS LINE (Host:Container)
+    depends_on:
+      - db
+    environment:
+      SQLALCHEMY_DATABASE_URI: "postgresql+psycopg2://newaifyuser:user2@db:5432/new_db"
+    volumes:
+      - ./uploads:/app/uploads
+    # Change command to explicitly use port 5000 for waitress-serve
+    command: ["/bin/sh", "-c", "python init_db.py && waitress-serve --host=0.0.0.0 --port=5000 app1:app"] # <--- CHANGE THIS LINE
+
+
+  db:
+    image: postgres:13
+    restart: always
+    environment:
+      POSTGRES_USER: newaifyuser
+      POSTGRES_PASSWORD: user2
+      POSTGRES_DB: new_db
+    volumes:
+      - db_data:/var/lib/postgresql/data
+
+
+volumes:
+  db_data:
