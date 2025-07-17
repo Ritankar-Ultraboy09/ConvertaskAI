@@ -1,0 +1,31 @@
+Python Framework:-
+1. Flask 
+2. for UI (html+ css(Bootstrap)+ FontAwesome)
+
+Database:-
+1. Postgres Database through psycopg-binary
+
+Transcription route
+1. pydub package is used for conversion into .wav , converting into mono channel and frame rate into 16k hz as Faster-whisper needs
+2. Faster-whisper medium model compute type 16, put into translation right now, for directly translating.
+3. The transcription can be downloaded.
+4. There are options provided in the UI which provides the summarisation gateway. It also has a additional prompt box where you can add any extra prompt for the same. 
+5. We have also put a attachement button, where you can add additional attachements along with the transcript. 
+
+the transcription is returned and the '/display transcirpt' route shows the transcript text 
+
+
+Summarisation:-
+1. The summarisation tool has been deployed under the name Convertask Ai tool, which summarises on the basis of the transcript that has beene generated. 
+2. The model used is llama3:8b-instruct-qk-16K (Llama's quantization along with setting up custom token to 16348 ) as of now. 
+3. The model is runned through ollama, which is containerized in docker, and deployed locally as localhost:11434.
+4. For the summarisation route initially is given which , determines the LLM , regarding its role. Right now, it is being told it is a Strategic tool
+5. We have also set a email route, which identifies any "send me this on email" command and send it to the person
+6. We have also added a update to notion route, that updates tasks using the notion's API
+
+
+Future:-
+1. We need voice recogs
+2. Ability to get trained on the basis of the basic needs of the company
+3. All of this are future prospects which can be achieved using Fine tuning the model. 
+

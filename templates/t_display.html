@@ -7,6 +7,7 @@
     <title>Transcription Result</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet"
         integrity="sha384-LN+7fdVzj6u52u30Kp6M/trliBMCMKTyK833zpbD+pXdCLuTusPj697FH4R/5mcr" crossorigin="anonymous">
+    <script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
     <style>
         body {
             background-color: #f8f9fa;
@@ -70,8 +71,79 @@
         .btn-custom {
             background-color: #11d9eb;
             font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+        }
 
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
 
+        .processing-indicator {
+            display: none;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 1rem;
+            background: rgba(17, 217, 235, 0.1);
+            border-radius: 10px;
+            margin: 1rem 0;
+            text-align: center;
+            animation: pulse 2s infinite;
+        }
+
+        .processing-indicator.show {
+            display: flex;
+            justify-content: center;
+        }
+
+        .processing-dots {
+            display: flex;
+            gap: 0.25rem;
+        }
+
+        .processing-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #11d9eb;
+            animation: bounce 1.4s infinite ease-in-out;
+        }
+
+        .processing-dot:nth-child(1) {
+            animation-delay: -0.32s;
+        }
+
+        .processing-dot:nth-child(2) {
+            animation-delay: -0.16s;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 0.7;
+            }
+
+            50% {
+                opacity: 1;
+            }
+        }
+
+        @keyframes bounce {
+
+            0%,
+            80%,
+            100% {
+                transform: scale(0);
+            }
+
+            40% {
+                transform: scale(1);
+            }
+        }
+
+        .spinner-border-sm {
+            width: 1rem;
+            height: 1rem;
         }
     </style>
 </head>
@@ -128,22 +200,149 @@
                         <label class="form-check-label" for="switchCheckPdf">Save as .pdf</label>
                     </div>
                     <div class="text-center mt-4">
-                        <div class="btn btn-primary btn-custom" id="SavetranscriptButton">Save Transcript</div>
+                        <div class="btn btn-primary btn-custom" id="SavetranscriptButton">
+                            Save Transcript
+                        </div>
                     </div>
                 </div>
                 <div class="sidebar-card">
                     <h3 class="mb-3 customh1">Want to Summarise?</h3>
-                    <div class="text-center mt-4">
+                    <div class="mb-3">
+                        <label for="modeSelector" class="form-label fw-semibold">Choose Operation</label>
+                        <select id="modeSelector" class="form-select">
+                            <option value="summarize">Summarize</option>
+                            <option value="infer">Talk to Convertask</option>
+                        </select>
+                    </div>
 
-                        <div class="btn btn-primary btn-custom" id="SummariseButton">Just Press</div>
+                    <div id="inferSection" class="text-center mt-4" style="display: none;">
+                        <textarea id="userPromptBox_1" name="user_prompt_1" rows="3" class="form-control mb-3"
+                            placeholder="Want to speak something through it?"></textarea>
+                        <div id="inferBtn" class="btn btn-primary btn-custom">
+                            <span id="inferBtnText">A Step Further</span>
+                            <span id="inferBtnSpinner" class="spinner-border spinner-border-sm ms-2"
+                                style="display: none;"></span>
+                        </div>
+                        <div class="processing-indicator" id="inferProcessingIndicator">
+                            <div>
+                                <strong>Connecting to Convertask...</strong>
+                                <div class="processing-dots">
+                                    <div class="processing-dot"></div>
+                                    <div class="processing-dot"></div>
+                                    <div class="processing-dot"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="summarizeSection" class="text-center mt-4 " style="display: none;">
+                        <label for="userPromptBox" class="form-label">Optional: Add some context to the
+                            transcript</label>
+                        <textarea id="userPromptBox" name="user_prompt" rows="3" class="form-control mb-3"
+                            placeholder="e.g. What were the main objections?">
+                        </textarea>
+                        <div class="btn btn-primary btn-custom" id="SummariseButton">
+                            <span id="summarizeBtnText">Just Press</span>
+                            <span id="summarizeBtnSpinner" class="spinner-border spinner-border-sm ms-2"
+                                style="display: none;"></span>
+                        </div>
+                        <div class="processing-indicator" id="summarizeProcessingIndicator">
+                            <div>
+                                <strong>Generating summary...</strong>
+                                <div class="processing-dots">
+                                    <div class="processing-dot"></div>
+                                    <div class="processing-dot"></div>
+                                    <div class="processing-dot"></div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
         <script>
             const originalFilename = "{{ original_filename }}";
+            const tinyMceConfig = { selector: '#transcriptEditorContainer', height: 'auto', menubar: false, statusbar: false, toolbar: ['undo', 'redo', '|', 'bold', 'italic'], plugins: ['autolink', 'lists'] };
+            tinymce.init(tinyMceConfig);
+
+            let isProcessing = {
+                summarize: false,
+                infer: false
+            };
+            function showProcessingState(type) {
+                const config = {
+                    summarize: {
+                        button: document.getElementById('SummariseButton'),
+                        btnText: document.getElementById('summarizeBtnText'),
+                        btnSpinner: document.getElementById('summarizeBtnSpinner'),
+                        indicator: document.getElementById('summarizeProcessingIndicator'),
+                        processingText: 'Processing...'
+                    },
+                    infer: {
+                        button: document.getElementById('inferBtn'),
+                        btnText: document.getElementById('inferBtnText'),
+                        btnSpinner: document.getElementById('inferBtnSpinner'),
+                        indicator: document.getElementById('inferProcessingIndicator'),
+                        processingText: 'Connecting...'
+                    }
+                };
+
+                const { button, btnText, btnSpinner, indicator, processingText } = config[type];
+
+                button.disabled = true;
+                btnText.textContent = processingText;
+                btnSpinner.style.display = 'inline-block';
+                indicator.classList.add('show');
+
+                // Disable other buttons and inputs during processing
+                document.getElementById('modeSelector').disabled = true;
+                document.getElementById('switchCheckDocx').disabled = true;
+                document.getElementById('switchCheckPdf').disabled = true;
+
+                isProcessing[type] = true;
+            }
+
+            function hideProcessingState(type) {
+                const config = {
+                    summarize: {
+                        button: document.getElementById('SummariseButton'),
+                        btnText: document.getElementById('summarizeBtnText'),
+                        btnSpinner: document.getElementById('summarizeBtnSpinner'),
+                        indicator: document.getElementById('summarizeProcessingIndicator'),
+                        originalText: 'Just Press'
+                    },
+                    infer: {
+                        button: document.getElementById('inferBtn'),
+                        btnText: document.getElementById('inferBtnText'),
+                        btnSpinner: document.getElementById('inferBtnSpinner'),
+                        indicator: document.getElementById('inferProcessingIndicator'),
+                        originalText: 'A Step Further'
+                    }
+                };
+
+                const { button, btnText, btnSpinner, indicator, originalText } = config[type];
+
+                button.disabled = false;
+                btnText.textContent = originalText;
+                btnSpinner.style.display = 'none';
+                indicator.classList.remove('show');
+
+                // Re-enable other buttons and inputs
+                document.getElementById('modeSelector').disabled = false;
+                document.getElementById('switchCheckDocx').disabled = false;
+                document.getElementById('switchCheckPdf').disabled = false;
+
+                isProcessing[type] = false;
+            }
+
+            function isAnyProcessing() {
+                return Object.values(isProcessing).some(processing => processing);
+            }
+
 
             document.getElementById('SavetranscriptButton').addEventListener('click', function () {
+
+
                 const transcriptText = document.getElementById('transcriptContent').textContent;
                 const saveAsDocx = document.getElementById('switchCheckDocx').checked;
                 const saveAsPdf = document.getElementById('switchCheckPdf').checked;
@@ -160,6 +359,7 @@
                     alert('Please select a format (DOCX or PDF) to save.');
                     return;
                 }
+
 
                 fetch('/download_transcript', {
                     method: 'POST',
@@ -195,34 +395,6 @@
                     });
             });
 
-            document.getElementById('SummariseButton').addEventListener('click', function () {
-                const transcriptText = document.getElementById('transcriptContent').textContent;
-
-                fetch('/summarise_transcript', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        transcript: transcriptText
-                    })
-                })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            alert('Summary generated successfully!');
-                            // You can display the summary in a modal or a new section
-                            console.log(data.summary);
-                        } else {
-                            alert('Failed to generate summary. Please try again.');
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        alert('An error occurred while generating the summary.');
-                    });
-
-            });
             document.addEventListener('DOMContentLoaded', function () {
                 const audioPlayerContainer = document.getElementById('audioPlayerContainer');
                 if (originalFilename) {
@@ -234,7 +406,12 @@
             });
 
             document.getElementById('SummariseButton').addEventListener('click', function () {
-                const transcriptText = document.getElementById('transcriptContent').textContent;
+                if (isAnyProcessing()) return;
+
+                const transcriptText = tinymce.activeEditor.getContent();
+                const userPrompt = document.getElementById('userPromptBox').value.trim();
+
+                showProcessingState('summarize');
 
                 fetch('/summarise_transcript', {
                     method: 'POST',
@@ -243,7 +420,8 @@
                     },
                     body: JSON.stringify({
                         transcript: transcriptText,
-                        original_filename: originalFilename
+                        original_filename: originalFilename,
+                        user_prompt: userPrompt
                     })
                 })
                     .then(response => response.json())
@@ -251,16 +429,94 @@
                         if (data.success && data.redirect_url) {
                             window.location.href = data.redirect_url;
                         } else {
+                            hideProcessingState('summarize');
                             alert('Failed to generate summary. Please try again. Error: ' + data.error);
                             console.error('Summarization error:', data.error);
                         }
                     })
                     .catch(error => {
+                        hideProcessingState();
                         console.error('Error:', error);
                         alert('An error occurred while generating the summary.');
                     });
+            });
+            document.getElementById('modeSelector').addEventListener('change', function () {
+                if (isAnyProcessing()) return;
 
+                const mode = this.value;
 
+                document.getElementById('summarizeSection').style.display = (mode === 'summarize') ? 'block' : 'none';
+                document.getElementById('inferSection').style.display = (mode === 'infer') ? 'block' : 'none';
+            });
+
+            document.getElementById('inferBtn').addEventListener('click', function () {
+                if (isAnyProcessing()) return;
+
+                const transcriptText = document.getElementById('transcriptContent').textContent;
+                const user_prompt1 = document.getElementById('userPromptBox_1').value.trim();
+
+                showProcessingState('infer');
+
+                fetch('/Talk_to_Convertask', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        transcript: transcriptText,
+                        original_filename: originalFilename,
+                        user_prompt_1: user_prompt1
+
+                    })
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success && data.redirect_url) {
+                            window.location.href = data.redirect_url;
+                        } else {
+                            hideProcessingState('infer');
+                            alert('Failed to connect to Convertask' + data.error);
+                            console.error('Summarization error:', data.error); 1
+                        }
+                    })
+                    .catch(error => {
+                        hideProcessingState('infer');
+                        console.error('Error:', error);
+                        alert('An error occured while connecting Convertask');
+                    });
+            });
+            tinymce.init({
+                selector: '#transcriptEditorContainer',
+                height: 'auto',
+                menubar: false,
+                statusbar: false,
+                toolbar: 'undo redo | bold italic | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image',
+                plugins: 'autolink lists link image charmap print preview anchor',
+                setup: function (editor) {
+                    editor.on('change', function () {
+
+                        const editedTranscript = editor.getContent();
+                        fetch('/update_transcript', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                transcript: editedTranscript,
+                                original_filename: originalFilename
+                            })
+                        })
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.success) {
+                                    console.log('Transcript updated successfully:', data.message);
+                                } else {
+                                    console.error('Failed to update transcript:', data.error);
+                                }
+                            })
+                            .catch(error => {
+                                console.error('Error updating transcript:', error);
+                            });
+                    });
+                }
             });
         </script>
 

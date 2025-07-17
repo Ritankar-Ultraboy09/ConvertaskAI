@@ -1,11 +1,11 @@
 from faster_whisper import WhisperModel
 
 
-model = WhisperModel("medium", device="cpu", compute_type="float32")
+model = WhisperModel("medium", device="cuda", compute_type="float16")
 
 def transcribe_chunk(file_path):
 
-    prompt_text = "Aman. a month. Amand . Udit. U dict. you dict. uuu diiittt. Priyo. pre yo. AIFY. AI five. AISI.This is a conversation "
+    prompt_text = "Aman. a month. Amand . Udit. U dict. you dict. uuu diiittt. Priyo. pre yo. AIFY. AI five. I-5. AISI.This is a conversation "
     segments, info = model.transcribe(
         file_path,
         beam_size=5,

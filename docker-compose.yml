@@ -1,31 +1,67 @@
 version: '3.8'
 
 services:
-
-  web:
-    build: .
+  # Flask Application Service
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    # Map port 8000 on the host to port 8000 in the container
     ports:
-      - "5000:5000" # <--- CHANGE THIS LINE (Host:Container)
-    depends_on:
-      - db
-    environment:
-      SQLALCHEMY_DATABASE_URI: "postgresql+psycopg2://newaifyuser:user2@db:5432/new_db"
+      - "8000:8000"
+    # Mount the current directory into the container for live code changes (optional for production)
     volumes:
-      - ./uploads:/app/uploads
-    # Change command to explicitly use port 5000 for waitress-serve
-    command: ["/bin/sh", "-c", "python init_db.py && waitress-serve --host=0.0.0.0 --port=5000 app1:app"] # <--- CHANGE THIS LINE
+      - .:/app
+      # Mount a volume for Whisper models to persist them
+      - whisper_models:/root/.cache/whisper
+    # Specify GPU usage for the app service
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all # Use all available GPUs
+              capabilities: [gpu]
+    # Only depend on the database service now
+    depends_on:
+      db:
+        condition: service_healthy # Wait for db healthcheck to pass
+    # No 'environment' block here, as values are hardcoded in Python.
+    # This is recommended for Linux hosts to make 'host.docker.internal' resolve to your host's IP
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    # Command to wait for the database AND external Ollama to be ready before starting the app
+    command: >
+      bash -c "
+        /usr/bin/wait-for-it.sh db:5432 --timeout=60 --strict -- \
+        /usr/bin/wait-for-it.sh host.docker.internal:11434 --timeout=180 --strict -- \
+        python3 init_db.py && \
+        waitress-serve --listen=0.0.0.0:8000 app1:app
+      "
 
-
+  # PostgreSQL Database Service
   db:
     image: postgres:13
-    restart: always
-    environment:
-      POSTGRES_USER: newaifyuser
-      POSTGRES_PASSWORD: user2
-      POSTGRES_DB: new_db
+    # Mount a volume to persist database data
     volumes:
       - db_data:/var/lib/postgresql/data
+    # Environment variables for PostgreSQL
+    environment:
+      POSTGRES_DB: new_db
+      POSTGRES_USER: newaifyuser
+      POSTGRES_PASSWORD: user2
+    # Expose the default PostgreSQL port (optional, for direct host access)
+    ports:
+      - "5432:5432"
+    healthcheck: # Add healthcheck for the database
+      test: ["CMD-SHELL", "pg_isready -U newaifyuser -d new_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
 
+# Define named volumes for data persistence
 volumes:
+  whisper_models:
   db_data:
+  # Removed 'ollama_data' volume as Ollama is external

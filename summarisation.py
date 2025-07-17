@@ -10,14 +10,16 @@ def AiModel(prompt, response_schema = None):
             "http://host.docker.internal:11434/api/generate", 
             headers={"Content-Type": "application/json"},
             data = json.dumps({
-                "model": "mistral:7b-instruct-q4_0", 
+                "model": "mistral:7b-instruct-v0.2-q6_K", 
                 "prompt": prompt,
                 "stream": False,
                 "options": {
                     "temperature": 0,
                     "seed": 42,
-                    "num_predict": 2048,
-                    "repeat_penalty": 1.1
+                    "num_predict": 8192,
+                    "repeat_penalty": 1.1,
+                    "num_ctx" : 16384
+                    
             }
             })
         )
@@ -30,22 +32,34 @@ def AiModel(prompt, response_schema = None):
 
             if response_schema:
                 cleaned = raw_output.strip()
-                if "```" in cleaned:
-                    cleaned = re.sub(r"```json|```", "", cleaned).strip()
+                try:
+                    return json.loads(cleaned)
+                except json.JSONDecodeError as e:
+                    if cleaned.endswith('"null"') and not cleaned.endswith('}'):
+                        try:
+                            return json.loads(cleaned + "}")
+                        except json.JSONDecodeError:
+                            pass
+                    if "```" in cleaned:
+                        cleaned = re.sub(r"```json|```", "", cleaned).strip()
 
-                json_match = re.search(r"\{.*\}", cleaned, re.DOTALL)
-                if json_match:
-                    cleaned = json_match.group(0).strip()
-                    json_str = json_match.group(0)
-                    json_str = json_str.replace(": None", ": null")
-                    try:
-                        return json.loads(json_str)
-                    except json.JSONDecodeError as e:
-                        print(f"[ERROR] Failed to decode JSON from Ollama response: {e}. Raw: {json_str[:500]}")
+                    json_match = re.search(r"\{[\s\S]*\}", cleaned)
+
+                    if json_match:
+                        cleaned = json_match.group(0).strip()
+                        json_str = json_match.group(0)
+                        json_str = json_str.replace(": None", ": null")
+                        try:
+                            return json.loads(json_str)
+                        except json.JSONDecodeError as e:
+                            print(f"[ERROR] Failed to decode JSON from Ollama response: {e}. Raw: {json_str[:500]}")
+                            return None
+                    if not json_match:
+                        print(f"[ERROR] No JSON object found in Ollama response. Raw:\n{cleaned}")
                         return None
-                else:
-                    print(f"[ERROR] No JSON object found in Ollama response when schema expected. Raw: {raw_output[:500]}")
-                    return None
+                    else:
+                        print(f"[ERROR] No JSON object found in Ollama response when schema expected. Raw: {raw_output[:500]}")
+                        return None
             else:
                 return raw_output
         else:
@@ -78,13 +92,12 @@ TYPE_IDENTIFICATION_SCHEMA = {
     },
     "required": ["interaction_type"]
 }
-
 BASE_SUMMARY_PROMPT = """
 You are an expert assistant that extracts structured insights from the provided transcript of a {interaction_type_here}.
-Your job is to return a **JSON object only** with the following keys. Return 'null' for any section that cannot be extracted, or an empty array/string as appropriate.
-
+Your task is to return ONLY a valid JSON object — no explanation, no markdown, no surrounding text.
+If a user-provided context is given before the transcript, use it to guide your summary accordingly.
 Keys to extract:
-- 'summary': A concise overview of the main topics and outcomes.
+- 'summary': A concise overview of the main topics and outcomes. Note:- **SUMMARY IS VERY IMPORTANT, ALWAYS PROVIDE IT.**
 - 'speaker_minutes': Key points or significant statements, potentially tagged with speaker labels if available in the transcript (e.g., 'Speaker X: ...'). If speaker labels are not present, provide main discussion points.
 - 'actions': A numbered list of clear, actionable items that needs to be completed.
 - 'decisions': Brief descriptions of any decisions made or conclusions reached.
@@ -93,8 +106,8 @@ Keys to extract:
 - 'deadlines': Any mentioned deadlines or due dates, with associated tasks if possible (e.g., "Complete report by EOD Friday").
 - 'prompt_based': This field is for a specific user query. Since no specific user query is provided, return 'null'.
 
-Return ONLY the JSON object. No other text, explanations, or markdown.
-Strict JSON format example:
+Return ONLY the JSON object. Do not provide any explanation or analysis. Your entire response MUST be a valid JSON object. If you cannot extract data, return empty strings or arrays as defined.
+
 {{
   "summary": "...",
   "speaker_minutes": "...",
@@ -102,12 +115,21 @@ Strict JSON format example:
   "decisions": ["...", "..."],
   "tasks": ["...", "..."],
   "followups": ["...", "..."],
-  "deadlines": ["...", "..."]
+  "deadlines": ["...", "..."],
+  "prompt_based": "null"
 }}
+
+🛑 Notes:
+- You must return ONLY the JSON object — no explanation, no prose, no markdown, no triple backticks.
+- If a field has no data, return an empty string `""` or an empty list `[]` as appropriate.
+- For `prompt_based`, return `"null"` since no user query was provided.
+- For `deadlines`, try to include task + due date if mentioned.
+- The keys and structure must be exact — do not add or rename fields.
 
 Transcript:
 {transcript_text}
 """
+
 
 SUMMARY_EXTRACTION_SCHEMA = {
     "type": "OBJECT",
@@ -125,7 +147,7 @@ SUMMARY_EXTRACTION_SCHEMA = {
 }
 
 
-def process_transcript_for_summary(transcript_text: str) -> dict:
+def process_transcript_for_summary(transcript_text: str, user_prompt: str = "") -> dict:
     if not transcript_text or not transcript_text.strip():
         return {"error": "Transcript text is empty for summarization."}
 
@@ -144,9 +166,11 @@ def process_transcript_for_summary(transcript_text: str) -> dict:
 
     
     print(f"[INFO] Step 2: Generating structured summary for {interaction_type}...")
+    prompt_info = f"Context from user: {user_prompt}" if user_prompt else ""
+    combined_input = f"{prompt_info}Transcript:\n{transcript_text}"
     summary_prompt = BASE_SUMMARY_PROMPT.format(
         interaction_type_here=interaction_type,
-        transcript_text=transcript_text
+        transcript_text=combined_input
     )
     
     structured_summary = AiModel(summary_prompt, response_schema=SUMMARY_EXTRACTION_SCHEMA)
@@ -173,7 +197,3 @@ def process_transcript_for_summary(transcript_text: str) -> dict:
 
     print("[INFO] Structured summary generated.")
     return structured_summary
-
-
-
-

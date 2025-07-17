@@ -86,6 +86,79 @@
         .anywhere-padding {
             padding: 10px;
         }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .processing-indicator {
+            display: none;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 1rem;
+            background: rgba(17, 217, 235, 0.1);
+            border-radius: 10px;
+            margin: 1rem 0;
+            text-align: center;
+            animation: pulse 2s infinite;
+        }
+
+        .processing-indicator.show {
+            display: flex;
+            justify-content: center;
+        }
+
+        .processing-dots {
+            display: flex;
+            gap: 0.25rem;
+        }
+
+        .processing-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #11d9eb;
+            animation: bounce 1.4s infinite ease-in-out;
+        }
+
+        .processing-dot:nth-child(1) {
+            animation-delay: -0.32s;
+        }
+
+        .processing-dot:nth-child(2) {
+            animation-delay: -0.16s;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 0.7;
+            }
+
+            50% {
+                opacity: 1;
+            }
+        }
+
+        @keyframes bounce {
+
+            0%,
+            80%,
+            100% {
+                transform: scale(0);
+            }
+
+            40% {
+                transform: scale(1);
+            }
+        }
+
+        .spinner-border-sm {
+            width: 1rem;
+            height: 1rem;
+        }
     </style>
 </head>
 
@@ -161,6 +234,17 @@
                                         </div>
                                         <div id="audioPreview" class="mt-3"></div>
                                     </div>
+
+                                    <div class="processing-indicator" id="processingIndicator">
+                                        <div>
+                                            <strong>Processing transcription...</strong>
+                                            <div class="processing-dots">
+                                                <div class="processing-dot"></div>
+                                                <div class="processing-dot"></div>
+                                                <div class="processing-dot"></div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                                 <div class="mb-3 anywhere-padding">
                                     <label for="language" class="form-label">Audio Language</label>
@@ -173,7 +257,10 @@
                                     <button type="button" class="btn btn-primary btn-inside-modal"
                                         data-bs-dismiss="modal">Close</button>
                                     <button type="button" id="createTranscription"
-                                        class="btn btn-primary btn-inside-modal">Create</button>
+                                        class="btn btn-primary btn-inside-modal">
+                                        <span id="createBtnText">Create</span>
+                                        <span id="createBtnSpinner" class="spinner-border spinner-border-sm ms-2" style="display: none;"></span>
+                                    </button>
                                 </div>
 
                             </div>
@@ -192,6 +279,7 @@
 
     <script>
         let uploadedFilename = null;
+        let isProcesssing = false;
 
         document.getElementById('fileinput').addEventListener('change', function (event) {
             const file = event.target.files[0];
@@ -264,12 +352,56 @@
                     // Not any as such as of now, won't even update, 
                 });
         }
+        function showProcessingState() {
+            const createBtn = document.getElementById('createTranscription');
+            const createBtnText = document.getElementById('createBtnText');
+            const createBtnSpinner = document.getElementById('createBtnSpinner');
+            const processingIndicator = document.getElementById('processingIndicator');
+            const closeBtn = document.querySelector('[data-bs-dismiss="modal"]');
+
+
+            createBtn.disabled = true;
+            createBtnText.textContent = 'Processing...';
+            createBtnSpinner.style.display = 'inline-block';
+
+            processingIndicator.classList.add('show');
+
+
+            closeBtn.disabled = true;
+
+            isProcessing = true;
+        }
+
+        function hideProcessingState() {
+            const createBtn = document.getElementById('createTranscription');
+            const createBtnText = document.getElementById('createBtnText');
+            const createBtnSpinner = document.getElementById('createBtnSpinner');
+            const processingIndicator = document.getElementById('processingIndicator');
+            const closeBtn = document.querySelector('[data-bs-dismiss="modal"]');
+
+
+            createBtn.disabled = false;
+            createBtnText.textContent = 'Create';
+            createBtnSpinner.style.display = 'none';
+
+            processingIndicator.classList.remove('show');
+
+            closeBtn.disabled = false;
+
+            isProcessing = false;
+        }
 
         document.getElementById('createTranscription').addEventListener('click', function () {
             if (!uploadedFilename) {
                 alert('Please upload a file first.');
                 return;
             }
+            if (isProcesssing) {
+                return;
+            }
+
+            showProcessingState();
+
             fetch('/transcribe', {
                 method: 'POST',
                 headers: {
@@ -284,16 +416,25 @@
 
                     }
                     else if (data.error) {
+                        hideProcessingState();
                         alert('Transcription failed: ' + data.error);
                     }
                     else {
-                        alert('Transcription failed: Fuck off ');
+                        alert('Transcription failed: Please retry later ');
                     }
                 })
                 .catch(error => {
+                    hideProcessingState();
                     console.error('Transcription error:', error);
                     alert('An error occurred during transcription: ' + error);
                 });
+        });
+
+        document.getElementById('uploadModal').addEventListener('hide.bs.modal', function (e) {
+            if (isProcessing) {
+                e.preventDefault();
+                return false;
+            }
         });
 
     </script>
